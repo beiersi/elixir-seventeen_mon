@@ -3,9 +3,8 @@ defmodule SeventeenMon do
   Documentation for SeventeenMon.
   """
   
-  @root_dir       File.cwd!
-  @data_dir       Path.join(~w(#{@root_dir} data))
-  @data_file_path Path.join(~w(#{@data_dir} 17monipdb.dat))
+  #@root_dir       File.cwd!
+  #@data_dir       Path.join(~w(#{@root_dir} data))
   @ets_table_name "#{__MODULE__}:ets_table" |> String.to_atom()
 
   def ets_table_name do
@@ -80,8 +79,14 @@ defmodule SeventeenMon do
         fp
     end
   end
+
+  def data_dir do
+    Path.join(~w(#{:code.priv_dir(:seventeen_mon)} data))
+  end
   
-  def data_file_path, do: @data_file_path
+  def data_file_path do
+    Path.join(~w(#{data_dir()} 17monipdb.dat))
+  end
 
   def data_offset(fp) do
     case :ets.lookup(ets_table_name(), "offset") do

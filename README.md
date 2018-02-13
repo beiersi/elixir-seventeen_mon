@@ -1,6 +1,6 @@
 # SeventeenMon 
 
-elixir 的 ipip.net IP库解析代码。
+elixir版 的 ipip.net IP库解析代码。
 
 ## Installation
 
