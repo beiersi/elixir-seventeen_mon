@@ -20,6 +20,8 @@ defmodule SeventeenMon.Mixfile do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    []
+    [
+      {:benchee, "~> 0.12", only: :dev}
+    ]
   end
 end

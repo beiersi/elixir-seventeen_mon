@@ -3,24 +3,6 @@ defmodule SeventeenMon do
   Documentation for SeventeenMon.
   """
   
-  #@root_dir       File.cwd!
-  #@data_dir       Path.join(~w(#{@root_dir} data))
-  @ets_table_name "#{__MODULE__}:ets_table" |> String.to_atom()
-
-  def ets_table_name do
-    @ets_table_name
-  end
-
-  def create_est_table do
-    case :ets.info(ets_table_name()) do
-      :undefined ->
-        :ets.new(ets_table_name(), [:named_table])
-        ets_table_name()
-      ets_tab ->
-        ets_tab[:name]
-    end
-  end
-
   @doc """
   find ip
 
@@ -31,8 +13,6 @@ defmodule SeventeenMon do
 
   """
   def find(ip) do
-    create_est_table()
-
     ip_list = ip_to_list(ip)
     ip_long = ip_to_long(ip_list)
     packed_ip = packed_ip(ip_long)
@@ -69,16 +49,25 @@ defmodule SeventeenMon do
     end
   end
 
-  def data_fp() do
-    case :ets.lookup(ets_table_name(), "fp") do
-      [] ->
-        fp = File.open!(data_file_path(), [:read, :binary])
-        :ets.insert(ets_table_name(), {"fp", fp})
-        fp
-      [{"fp", fp} | _] ->
-        fp
+  def data_fp do
+    case Process.get(:data_fp, "nil") do
+      "nil" ->
+        create_data_fp()
+      data_fp ->
+        if Process.alive?(data_fp) do
+          data_fp
+        else
+          create_data_fp()
+        end
     end
   end
+
+  def create_data_fp do
+    data_fp = File.open!(data_file_path(), [:read, :binary])
+    Process.put(:data_fp, data_fp)
+    data_fp
+  end
+
 
   def data_dir do
     Path.join(~w(#{:code.priv_dir(:seventeen_mon)} data))
@@ -89,26 +78,24 @@ defmodule SeventeenMon do
   end
 
   def data_offset(fp) do
-    case :ets.lookup(ets_table_name(), "offset") do
-      [] ->
-        :file.position(fp, 0)
-        << offset :: unsigned-32 >> = IO.binread(fp, 4)
-        :ets.insert(ets_table_name(), {"offset", offset})
-        offset
-      [{"offset", offset} | _] ->
-        offset
+    case Process.get(:data_offset, "nil") do
+      "nil" ->
+        {:ok, << data_offset :: unsigned-32 >>} = :file.pread(fp, 0, 4)
+        Process.put(:data_offset, data_offset)
+        data_offset
+      data_offset ->
+        data_offset
     end
   end
 
   def data_index(fp, offset) do
-    case :ets.lookup(ets_table_name(), "index") do
-      [] ->
-        :file.position(fp, 4)
-        index = IO.binread(fp, offset - 4)
-        :ets.insert(ets_table_name(), {"index", index})
-        index
-      [{"index", index} | _] ->
-        index
+    case Process.get(:"data_index_#{offset}", "nil") do
+      "nil" ->
+        {:ok, data_index} = :file.pread(fp, 4, offset - 4)
+        Process.put(:"data_index_#{offset}", data_index)
+        data_index
+      data_index ->
+        data_index
     end
   end
 
