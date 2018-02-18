@@ -36,6 +36,7 @@ defmodule SeventeenMon do
 
       try do
         result = data_seek(data_fp, offset, index_offset, index_length) 
+        File.close(data_fp)
 
         %{
           country: Enum.at(result, 0),
@@ -43,28 +44,20 @@ defmodule SeventeenMon do
           city: Enum.at(result, 2)
         }
       rescue
-        _ -> "N/A"
+        _ -> 
+          File.close(data_fp)
+          "N/A"
       end
 
     end
   end
 
   def data_fp do
-    case Process.get(:data_fp, "nil") do
-      "nil" ->
-        create_data_fp()
-      data_fp ->
-        if Process.alive?(data_fp) do
-          data_fp
-        else
-          create_data_fp()
-        end
-    end
+    create_data_fp()
   end
 
   def create_data_fp do
     data_fp = File.open!(data_file_path(), [:read, :binary])
-    Process.put(:data_fp, data_fp)
     data_fp
   end
 
@@ -78,25 +71,15 @@ defmodule SeventeenMon do
   end
 
   def data_offset(fp) do
-    case Process.get(:data_offset, "nil") do
-      "nil" ->
-        {:ok, << data_offset :: unsigned-32 >>} = :file.pread(fp, 0, 4)
-        Process.put(:data_offset, data_offset)
-        data_offset
-      data_offset ->
-        data_offset
-    end
+    {:ok, << data_offset :: unsigned-32 >>} = :file.pread(fp, 0, 4)
+
+    data_offset
   end
 
   def data_index(fp, offset) do
-    case Process.get(:"data_index_#{offset}", "nil") do
-      "nil" ->
-        {:ok, data_index} = :file.pread(fp, 4, offset - 4)
-        Process.put(:"data_index_#{offset}", data_index)
-        data_index
-      data_index ->
-        data_index
-    end
+    {:ok, data_index} = :file.pread(fp, 4, offset - 4)
+
+    data_index
   end
 
   def data_max_comp_len(offset) do
