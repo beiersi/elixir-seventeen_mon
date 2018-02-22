@@ -14,14 +14,16 @@ defmodule SeventeenMon.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :cachex],
+      mod: {SeventeenMon, []}
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:benchee, "~> 0.12", only: :dev}
+      {:benchee, "~> 0.12", only: :dev},
+      {:cachex, "~> 3.0"}
     ]
   end
 end

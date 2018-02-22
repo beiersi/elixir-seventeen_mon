@@ -1,4 +1,12 @@
 defmodule SeventeenMon do
+  use Application
+
+  @cache_name :"seventeen_mon_cache"
+
+  def start(_type, _args) do
+    SeventeenMon.Supervisor.start_link(name: SeventeenMon.Supervisor)
+  end
+
   @moduledoc """
   Documentation for SeventeenMon.
   """
@@ -17,12 +25,12 @@ defmodule SeventeenMon do
     ip_long = ip_to_long(ip_list)
     packed_ip = packed_ip(ip_long)
 
-    data_fp = data_fp()
+    data = data()
 
     tmp_offset = Enum.at(ip_list, 0) * 4
 
-    offset = data_offset(data_fp)
-    index = data_index(data_fp, offset)
+    offset = data_offset(data)
+    index = data_index(data, offset)
     max_comp_len = data_max_comp_len(offset)
 
     << start :: unsigned-little-32 >> = binary_part(index, tmp_offset, 4)
@@ -35,8 +43,7 @@ defmodule SeventeenMon do
     else
 
       try do
-        result = data_seek(data_fp, offset, index_offset, index_length) 
-        File.close(data_fp)
+        result = data_seek(data, offset, index_offset, index_length) 
 
         %{
           country: Enum.at(result, 0),
@@ -45,22 +52,26 @@ defmodule SeventeenMon do
         }
       rescue
         _ -> 
-          File.close(data_fp)
           "N/A"
       end
 
     end
   end
 
-  def data_fp do
-    create_data_fp()
+  def cache_name do
+    @cache_name
   end
 
-  def create_data_fp do
-    data_fp = File.open!(data_file_path(), [:read, :binary])
-    data_fp
+  def data do
+    case Cachex.get!(@cache_name, "data") do
+      nil ->
+        data = File.read!(data_file_path())
+        Cachex.put(@cache_name, "data", data)
+        data
+      data ->
+        data
+    end
   end
-
 
   def data_dir do
     Path.join(~w(#{:code.priv_dir(:seventeen_mon)} data))
@@ -70,24 +81,37 @@ defmodule SeventeenMon do
     Path.join(~w(#{data_dir()} 17monipdb.dat))
   end
 
-  def data_offset(fp) do
-    {:ok, << data_offset :: unsigned-32 >>} = :file.pread(fp, 0, 4)
+  def data_offset(data) do
+    case Cachex.get!(@cache_name, "data_offset") do
+      nil ->
+        << data_offset :: unsigned-32 >> = binary_part(data, 0, 4)
+        Cachex.put(@cache_name, "data_offset", data_offset)
+        data_offset
 
-    data_offset
+      data_offset ->
+        data_offset
+    end
   end
 
-  def data_index(fp, offset) do
-    {:ok, data_index} = :file.pread(fp, 4, offset - 4)
+  def data_index(data, offset) do
+    case Cachex.get!(@cache_name, "data_index") do
+      nil ->
+        data_index = binary_part(data, 4, offset-4)
+        Cachex.put(@cache_name, "data_index", data_index)
+        data_index
 
-    data_index
+      data_index ->
+        data_index
+
+    end
   end
 
   def data_max_comp_len(offset) do
     offset - 1024 - 4
   end
 
-  def data_seek(fp, offset, index_offset, index_length) do
-    {:ok, result} = :file.pread(fp, offset + index_offset - 1024, index_length)
+  def data_seek(data, offset, index_offset, index_length) do
+    result = binary_part(data,  offset + index_offset - 1024, index_length)
     String.split(result, "\t")
   end
 
