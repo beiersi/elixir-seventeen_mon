@@ -16,7 +16,7 @@ def deps do
 end
 ```
 
-## Useage
+## Usage
 
 ```elixir
 SeventeenMon.find("192.168.2.100")
