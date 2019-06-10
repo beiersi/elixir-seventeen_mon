@@ -16,25 +16,25 @@ defmodule SeventeenMonTest do
     assert [] == keys -- [:city, :country, :province]
   end
 
-  #@tag timeout: 10000000
-  #test "performance test" do
-  #  IO.puts "\n"
-  #  IO.puts "Testing SeventeenMon.find/1 performance"
+  @tag timeout: 10000000
+  test "performance test" do
+    IO.puts "\n"
+    IO.puts "Testing SeventeenMon.find/1 performance"
 
-  #  {tc, times} = :timer.tc fn ->
-  #    Enum.reduce (1..2000), 0, fn(_, acc) ->
-  #      ip = Enum.map((0..3), fn(_) ->
-  #        :rand.uniform(255)
-  #      end) |> Enum.join(".")
+    {tc, times} = :timer.tc fn ->
+      Enum.reduce (1..20000), 0, fn(_, acc) ->
+        ip = Enum.map((0..3), fn(_) ->
+          :rand.uniform(255)
+        end) |> Enum.join(".")
 
-  #      SeventeenMon.find(ip)
+        SeventeenMon.find(ip)
 
-  #      acc + 1
-  #    end
-  #  end
+        acc + 1
+      end
+    end
 
 
-  #  IO.puts "Average execute time: #{tc / times} μs."
-  #end
+    IO.puts "Average execute time: #{tc / times} μs."
+  end
 
 end
